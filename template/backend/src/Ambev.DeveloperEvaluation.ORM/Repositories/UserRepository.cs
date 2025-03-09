@@ -1,6 +1,7 @@
 ﻿using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
@@ -18,6 +19,17 @@ public class UserRepository : IUserRepository
     public UserRepository(DefaultContext context)
     {
         _context = context;
+    }
+
+    public async Task<IEnumerable<User>> GetAllPaginatedAsync(int pageNumber, int pageSize, Expression<Func<User, object>> orderBy, bool descending = false, CancellationToken cancellationToken = default)
+    {
+        var result = _context.Users.AsNoTracking().AsQueryable();
+
+        result = descending ? result.OrderByDescending(orderBy) : result.OrderBy(orderBy);
+
+        result = result.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+        return await result.ToListAsync(cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -41,7 +53,7 @@ public class UserRepository : IUserRepository
     /// <returns>The user if found, null otherwise</returns>
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Users.FirstOrDefaultAsync(o=> o.Id == id, cancellationToken);
+        return await _context.Users.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
     /// <summary>
@@ -71,5 +83,19 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<User> UpdateAsync(User model, CancellationToken cancellationToken = default)
+    {
+        var modelToUpdate = await GetByIdAsync(model.Id, cancellationToken);
+
+        if (modelToUpdate is not null)
+        {
+            _context.Users.Entry(modelToUpdate).CurrentValues.SetValues(model);
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return model;
     }
 }

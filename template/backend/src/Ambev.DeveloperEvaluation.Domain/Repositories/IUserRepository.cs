@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace Ambev.DeveloperEvaluation.Domain.Repositories;
 
@@ -7,6 +8,9 @@ namespace Ambev.DeveloperEvaluation.Domain.Repositories;
 /// </summary>
 public interface IUserRepository
 {
+
+    Task<IEnumerable<User>> GetAllPaginatedAsync(int pageNumber, int pageSize, Expression<Func<User, object>> orderBy, bool descending = false, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Creates a new user in the repository
     /// </summary>
@@ -30,6 +34,8 @@ public interface IUserRepository
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The user if found, null otherwise</returns>
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    Task<User> UpdateAsync(User model, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a user from the repository
